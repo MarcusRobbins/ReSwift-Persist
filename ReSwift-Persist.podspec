@@ -24,4 +24,5 @@ Pod::Spec.new do |spec|
   spec.source_files     = 'ReSwift-Persist/Source/**/*'
 
   spec.dependency "ReSwift", "~> 4.1.1"
+  spec.dependency "RxSwift"
 end
