@@ -7,15 +7,48 @@
 //
 
 import ReSwift
+import RxSwift
 
 struct VersionInfo: Codable {
     let current: String
+}
+
+struct PersistConfigState<State> {
+    let persistConfig: PersistConfig
+    let state: State
 }
 
 func persistReducer<State: PersistState>(
     config: PersistConfig,
     baseReducer: @escaping Reducer<State>
     ) -> Reducer<State>  {
+    
+    
+    var saveDataSubject = PublishSubject<PersistConfigState<State>>()
+    //var saveDataSubject2: PublishSubject = PublishSubject<Double>()
+    
+    saveDataSubject
+        //.debounce(2, scheduler: MainScheduler.instance)
+        .throttle(RxTimeInterval.seconds(1), scheduler: MainScheduler.instance)
+        .concatMap{ r in
+            //here we have been asked to open, but we are still open, so we close:
+            return Observable<(Bool)>.create({ observer in
+                
+                    DispatchQueue.background(background: {
+                        saveData(config: r.persistConfig, newState: r.state)
+                    }, completion:{
+                        observer.onNext(true)
+                        observer.onCompleted()
+                    })
+                
+                    return Disposables.create()
+                })
+        }
+        
+        .subscribe{ r in
+            print("saved sensibly")
+        }
+    
     return { (_ action: Action, _ state: State?) in
         switch action {
         case _ as ReSwiftInit: // Try restore state right after initialization of ReSwift
@@ -30,8 +63,10 @@ func persistReducer<State: PersistState>(
             if let state = state, state.shouldSkipPersist(newState) {
                 return newState
             }
-
-            saveData(config: config, newState: newState)
+            
+            var persistConfigState = PersistConfigState(persistConfig: config, state: newState)
+            saveDataSubject.onNext(persistConfigState)
+            
             return newState
         }
     }
@@ -164,25 +199,28 @@ private func readDecodableFromFile<T: Decodable>(url: URL, jsonDecoder: JSONDeco
     return instance
 }
 
-private func saveData<State: PersistState>(config: PersistConfig, newState: State) {
-    // Save new state to json
-    do {
-        let json = try config.jsonEncoder().encode(newState)
-        let jsonString = String(data: json, encoding: .utf8)
-        let stateTypeName = String(describing: State.self)
-        let stateDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent(config.persistDirectory)
-            .appendingPathComponent(stateTypeName)
-        let versionDirectory = stateDirectory.appendingPathComponent(config.version)
-        createDirectoryIfNotExist(directoryPath: versionDirectory.path)
 
-        // Try save the state to json file
-        let filename = versionDirectory.appendingPathComponent("\(stateTypeName).json")
-        try jsonString?.write(to: filename, atomically: true, encoding: .utf8)
-        config.log("State have been saved successfully!")
-    } catch {
-        config.log(error)
-    }
+
+
+
+private func saveData<State: PersistState>(config: PersistConfig, newState: State) {    
+        do {
+            let json = try config.jsonEncoder().encode(newState)
+            let jsonString = String(data: json, encoding: .utf8)
+            let stateTypeName = String(describing: State.self)
+            let stateDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent(config.persistDirectory)
+                .appendingPathComponent(stateTypeName)
+            let versionDirectory = stateDirectory.appendingPathComponent(config.version)
+            createDirectoryIfNotExist(directoryPath: versionDirectory.path)
+
+            // Try save the state to json file
+            let filename = versionDirectory.appendingPathComponent("\(stateTypeName).json")
+            try jsonString?.write(to: filename, atomically: true, encoding: .utf8)
+            config.log("State have been saved successfully!")
+        } catch {
+            config.log(error)
+        }
 }
 
 private func createDirectoryIfNotExist(directoryPath: String) {
@@ -191,4 +229,19 @@ private func createDirectoryIfNotExist(directoryPath: String) {
                                                  withIntermediateDirectories: true,
                                                  attributes: nil)
     }
+}
+
+extension DispatchQueue {
+
+    static func background(delay: Double = 0.0, background: (()->Void)? = nil, completion: (() -> Void)? = nil) {
+        DispatchQueue.global(qos: .background).async {
+            background?()
+            if let completion = completion {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: {
+                    completion()
+                })
+            }
+        }
+    }
+
 }
