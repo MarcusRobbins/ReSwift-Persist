@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name         = "ReSwift-Persist"
-  spec.version      = "0.1.0"
+  spec.version      = "0.1.1"
   spec.summary      = "Data persistence for ReSwift"
   spec.description  = <<-DESC
                       ReSwift-Persist automatically persist/rehydrate ReSwift app state as JSON file. Inspired by Redux-persist.
