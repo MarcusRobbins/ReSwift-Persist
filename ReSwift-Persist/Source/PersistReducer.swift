@@ -228,8 +228,11 @@ private func saveData<State: PersistState>(config: PersistConfig, newState: Stat
             createDirectoryIfNotExist(directoryPath: versionDirectory.path)
 
             // Try save the state to json file
-            let filename = versionDirectory.appendingPathComponent("\(stateTypeName).json")
-            try jsonString?.write(to: filename, atomically: true, encoding: .utf8)
+//            let filename = versionDirectory.appendingPathComponent("\(stateTypeName).json")
+//            try jsonString?.write(to: filename, atomically: true, encoding: .utf8)
+            
+            config.save("\(stateTypeName).json", jsonString ?? "")
+            
             config.log2("State have been saved successfully!")
         } catch {
             config.log(error)
