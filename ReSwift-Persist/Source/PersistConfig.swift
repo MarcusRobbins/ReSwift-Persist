@@ -14,13 +14,15 @@ public struct PersistConfig {
     let jsonDecoder: (() -> JSONDecoder)
     let jsonEncoder: (() -> JSONEncoder)
     var migration: [String: AnyMigratable]?
+    var log2: ((String) -> Void)
     public var debug = false
 
     public init(persistDirectory: String,
                 version: String,
                 jsonDecoder: (() -> JSONDecoder)? = nil,
                 jsonEncoder: (() -> JSONEncoder)? = nil,
-                migration: [String: AnyMigratable]? = nil) {
+                migration: [String: AnyMigratable]? = nil,
+                log: @escaping ((String) -> Void)) {
         self.persistDirectory = persistDirectory
         self.version = version
         self.jsonDecoder = jsonDecoder ?? {
@@ -34,6 +36,8 @@ public struct PersistConfig {
             return defaultEncoder
         }
         self.migration = migration
+        
+        self.log2 = log
     }
 
     func log(_ any: Any) {

@@ -6,6 +6,10 @@
 //  Copyright © 2019 muzix. All rights reserved.
 //
 
+import Foundation
+#if os(Android)
+    import FoundationNetworking
+#endif
 import ReSwift
 
 public typealias PersistState = StateType & Codable & Equatable & PersistableState

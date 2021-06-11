@@ -25,4 +25,5 @@ Pod::Spec.new do |spec|
 
   spec.dependency "ReSwift", "~> 4.1.1"
   spec.dependency "RxSwift", "5.1.1"
+  spec.dependency "Resolver", "1.2.1"
 end

@@ -5,9 +5,16 @@
 //  Created by muzix on 9/8/19.
 //  Copyright © 2019 muzix. All rights reserved.
 //
-
+import Foundation
+#if os(Android)
+    import FoundationNetworking
+#endif
 import ReSwift
 import RxSwift
+//import Logging
+
+
+//private let log = Logger(label: "dispatch-tests")
 
 struct VersionInfo: Codable {
     let current: String
@@ -46,7 +53,10 @@ func persistReducer<State: PersistState>(
         }
         
         .subscribe{ r in
-            print("saved sensibly")
+            
+            //log.info("\("asad saved sensibly: " + "")" )
+                        
+            config.log2("saved sensibly")
         }
     
     return { (_ action: Action, _ state: State?) in
@@ -57,6 +67,9 @@ func persistReducer<State: PersistState>(
             }
             return restoredState
         default: // Save state for any new action
+            
+            config.log2("asad persist thing happening!")
+            
             let newState = baseReducer(action, state)
 
             // Should skip persist step ?
@@ -78,14 +91,14 @@ private func restoreData<State: PersistState>(config: PersistConfig) -> State? {
         .appendingPathComponent(config.persistDirectory)
         .appendingPathComponent(stateTypeName)
 
-    config.log("STATE DIRECTORY: \(stateDirectory.absoluteString)")
+    config.log2("STATE DIRECTORY: \(stateDirectory.absoluteString)")
 
     let currentVersion = getCurrentSchemaVersion(config: config, stateTypeName: stateTypeName)
     let isMigrationNeeded = currentVersion != config.version
 
     let newVersionDirectory = stateDirectory.appendingPathComponent(config.version)
     if isMigrationNeeded && FileManager.default.fileExists(atPath: newVersionDirectory.path) {
-        config.log("Migration will use existed directory '\(config.version)' for new version!")
+        config.log2("Migration will use existed directory '\(config.version)' for new version!")
     }
 
     // MIGRATE DATA
@@ -96,7 +109,7 @@ private func restoreData<State: PersistState>(config: PersistConfig) -> State? {
             config.log(error)
         }
     } else {
-        config.log("No migration needed.")
+        config.log2("No migration needed.")
     }
 
     // RESTORE STATE FROM NEW VERSION
@@ -105,14 +118,14 @@ private func restoreData<State: PersistState>(config: PersistConfig) -> State? {
 
     // No stored state. Return initial state.
     guard FileManager.default.fileExists(atPath: filename.path) else {
-        print("Persisted data not found!")
+        config.log2("Persisted data not found!")
         return nil
     }
 
     // Try read json file and return stored state.
     do {
         let storedState: State = try readDecodableFromFile(url: filename)
-        print("State restored successfully!")
+        config.log2("State restored successfully!")
         return storedState
     } catch {
         print(error)
@@ -124,7 +137,7 @@ private func runMigration<NewState: PersistState>(_ newStateType: NewState.Type,
                                                   config: PersistConfig,
                                                   oldVersion: String?,
                                                   directory: URL) throws {
-    config.log("Migration started")
+    config.log2("Migration started")
     let stateTypeName = String(describing: NewState.self)
     // Create new version folder
     let versionDirectory = directory.appendingPathComponent(config.version)
@@ -136,40 +149,40 @@ private func runMigration<NewState: PersistState>(_ newStateType: NewState.Type,
     let versionInfoData = try config.jsonEncoder().encode(versionInfo)
     let versionInfoString = String(data: versionInfoData, encoding: .utf8)
     try versionInfoString?.write(to: versioningFilePath, atomically: true, encoding: .utf8)
-    config.log("Version \(config.version) successfully settled.")
+    config.log2("Version \(config.version) successfully settled.")
 
     // Return if no prev version found
     guard let oldVersion = oldVersion else {
-        config.log("No prev version found!")
+        config.log2("No prev version found!")
         return
     }
 
     // Run migration
     let oldVersionDirectory = directory.appendingPathComponent(oldVersion)
     let oldStateFilePath = oldVersionDirectory.appendingPathComponent("\(stateTypeName).json")
-    config.log("Look for old file at: \(oldStateFilePath.path)")
+    config.log2("Look for old file at: \(oldStateFilePath.path)")
 
     let newStateFilePath = versionDirectory.appendingPathComponent("\(stateTypeName).json")
     // Decode old data using old schema
     if let migration = config.migration?[oldVersion] {
-        config.log("Run migration with migration info provided.")
+        config.log2("Run migration with migration info provided.")
         do {
             if let newState = try migration._migrate(filePath: oldStateFilePath) as? NewState {
                 // Write new state to new directory
                 saveData(config: config, newState: newState)
-                config.log("Migration succeed!")
+                config.log2("Migration succeed!")
             } else {
-                config.log("Can not execute migration item with newState: \(String(describing: NewState.self))")
+                config.log2("Can not execute migration item with newState: \(String(describing: NewState.self))")
             }
         } catch {
-            config.log("Migration item failed: \(error)")
+            config.log2("Migration item failed: \(error)")
         }
     } else {
         if !FileManager.default.fileExists(atPath: newStateFilePath.path) {
             try FileManager.default.copyItem(atPath: oldStateFilePath.path, toPath: newStateFilePath.path)
-            config.log("No migration provided. Just copy the old data to the new version directory") //swiftlint:disable:this line_length
+            config.log2("No migration provided. Just copy the old data to the new version directory") //swiftlint:disable:this line_length
         } else {
-            config.log("File exists at path: \(newStateFilePath.path). Migration skipped.")
+            config.log2("File exists at path: \(newStateFilePath.path). Migration skipped.")
         }
     }
 }
@@ -181,7 +194,7 @@ private func getCurrentSchemaVersion(config: PersistConfig, stateTypeName: Strin
         .appendingPathComponent(stateTypeName)
     let versioningFileName = stateDirectory.appendingPathComponent("version.json")
     guard FileManager.default.fileExists(atPath: versioningFileName.path) else {
-        config.log("Versioning file not found!")
+        config.log2("Versioning file not found!")
         return nil
     }
     do {
@@ -203,7 +216,7 @@ private func readDecodableFromFile<T: Decodable>(url: URL, jsonDecoder: JSONDeco
 
 
 
-private func saveData<State: PersistState>(config: PersistConfig, newState: State) {    
+private func saveData<State: PersistState>(config: PersistConfig, newState: State) {
         do {
             let json = try config.jsonEncoder().encode(newState)
             let jsonString = String(data: json, encoding: .utf8)
@@ -217,7 +230,7 @@ private func saveData<State: PersistState>(config: PersistConfig, newState: Stat
             // Try save the state to json file
             let filename = versionDirectory.appendingPathComponent("\(stateTypeName).json")
             try jsonString?.write(to: filename, atomically: true, encoding: .utf8)
-            config.log("State have been saved successfully!")
+            config.log2("State have been saved successfully!")
         } catch {
             config.log(error)
         }
