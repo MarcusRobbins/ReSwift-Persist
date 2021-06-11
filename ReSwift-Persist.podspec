@@ -17,7 +17,7 @@ Pod::Spec.new do |spec|
     :git => "https://github.com/muzix/ReSwift-Persist.git",
     :tag => spec.version.to_s }
 
-  spec.ios.deployment_target = "8.0"
+  spec.ios.deployment_target = "11.0"
   spec.swift_versions = ["5.0", "4.2"]
 
   spec.requires_arc     = true

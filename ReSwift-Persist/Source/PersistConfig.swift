@@ -7,10 +7,12 @@
 //
 
 import Foundation
+import Resolver
 
 public struct PersistConfig {
     let persistDirectory: String
     let version: String
+    let resolver: Resolver
     let jsonDecoder: (() -> JSONDecoder)
     let jsonEncoder: (() -> JSONEncoder)
     var migration: [String: AnyMigratable]?
@@ -19,12 +21,15 @@ public struct PersistConfig {
 
     public init(persistDirectory: String,
                 version: String,
+                resolver: Resolver,
                 jsonDecoder: (() -> JSONDecoder)? = nil,
                 jsonEncoder: (() -> JSONEncoder)? = nil,
                 migration: [String: AnyMigratable]? = nil,
                 log: @escaping ((String) -> Void)) {
         self.persistDirectory = persistDirectory
         self.version = version
+        self.resolver = resolver
+        
         self.jsonDecoder = jsonDecoder ?? {
             let defaultDecoder = JSONDecoder()
             defaultDecoder.dateDecodingStrategy = .secondsSince1970
