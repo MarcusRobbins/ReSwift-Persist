@@ -142,9 +142,13 @@ private func restoreData<State: PersistState>(config: PersistConfig) -> State? {
         //let storedState: State = try readDecodableFromFile(url: "\(stateTypeName).json")
         
         var strContents = config.read("\(stateTypeName).json")
-        let instance = try JSONDecoder().decode(State.self, from: strContents!.data(using: .utf8)!)
-        config.log2("State restored successfully!")
-        return instance
+        if strContents != nil {
+            let instance = try JSONDecoder().decode(State.self, from: strContents!.data(using: .utf8)!)
+            config.log2("State restored successfully!")
+            return instance
+        } else {
+            return nil
+        }
         
         
         //return storedState
