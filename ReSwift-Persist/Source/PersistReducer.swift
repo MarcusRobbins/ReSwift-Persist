@@ -82,7 +82,7 @@ func persistReducer<State: PersistState>(
             return restoredState
         default: // Save state for any new action
             
-            config.log2("asad persist thing happening!2")
+            config.log2("asad persist thing happening!2" + String(describing:action))
             
             let newState = baseReducer(action, state)
 
