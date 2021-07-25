@@ -31,7 +31,7 @@ func persistReducer<State: PersistState>(
     ) -> Reducer<State>  {
     
     
-    config.log2("asad persist thing happening!1")
+    //config.log2("asad persist thing happening!1")
     var saveDataSubject = PublishSubject<PersistConfigState<State>>()
     //var saveDataSubject2: PublishSubject = PublishSubject<Double>()
     
@@ -44,33 +44,20 @@ func persistReducer<State: PersistState>(
         .throttle(RxTimeInterval.seconds(1), scheduler: SerialDispatchQueueScheduler.init(queue: saveQueue, internalSerialQueueName: "saveQueuesdwd"))
         .concatMap{ (r:PersistConfigState) -> Observable<(Bool)> in
             
-            config.log2("asad persist thing happening!3")
+            //config.log2("asad persist thing happening!3")
             //here we have been asked to open, but we are still open, so we close:
             return Observable<(Bool)>.create({ observer in
-                
-//                    DispatchQueue.background(background: {
-//                        config.log2("asad persist thing happening!4")
-//                        saveData(config: r.persistConfig, newState: r.state)
-//                    }, completion:{
-//                        observer.onNext(true)
-//                        observer.onCompleted()
-//                    })
-                
                     saveQueue2.async {
-                        config.log2("asad persist thing happening!4")
+                        //config.log2("asad persist thing happening!4")
                         saveData(config: r.persistConfig, newState: r.state)
                         observer.onNext(true)
                         observer.onCompleted()
                     }
-                
                     return Disposables.create()
                 })
         }
         .subscribe{ r in
-            
-            //log.info("\("asad saved sensibly: " + "")" )
-                        
-            config.log2("saved sensibly")
+            config.log2("asad1 saved sensibly")
         }
     
     return { (_ action: Action, _ state: State?) in
@@ -82,7 +69,7 @@ func persistReducer<State: PersistState>(
             return restoredState
         default: // Save state for any new action
             
-            config.log2("asad persist thing happening!2" + String(describing:action))
+            //config.log2("asad persist thing happening!2" + String(describing:action))
             
             let newState = baseReducer(action, state)
 
@@ -141,7 +128,7 @@ private func restoreData<State: PersistState>(config: PersistConfig) -> State? {
         //let storedState: State = try readDecodableFromFile(url: filename)
         //let storedState: State = try readDecodableFromFile(url: "\(stateTypeName).json")
         
-        var strContents = config.read("\(stateTypeName).json")
+        var strContents = config.read("\(stateTypeName).json", true)
         if strContents != nil {
             let instance = try JSONDecoder().decode(State.self, from: strContents!.data(using: .utf8)!)
             config.log2("State restored successfully!")

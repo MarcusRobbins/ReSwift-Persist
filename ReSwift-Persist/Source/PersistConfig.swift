@@ -13,7 +13,7 @@ public struct PersistConfig {
     let persistDirectory: String
     let version: String
     let save: ((String, String) -> Void)
-    let read: ((String) -> String?)
+    let read: ((String, Bool) -> String?)
     let jsonDecoder: (() -> JSONDecoder)
     let jsonEncoder: (() -> JSONEncoder)
     var migration: [String: AnyMigratable]?
@@ -23,7 +23,7 @@ public struct PersistConfig {
     public init(persistDirectory: String,
                 version: String,
                 save: @escaping ((String, String) -> Void),
-                read: @escaping ((String) -> String?),
+                read: @escaping ((String, Bool) -> String?),
                 jsonDecoder: (() -> JSONDecoder)? = nil,
                 jsonEncoder: (() -> JSONEncoder)? = nil,
                 migration: [String: AnyMigratable]? = nil,
